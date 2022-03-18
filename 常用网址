@@ -1,0 +1,6 @@
+https://nbviewer.org/
+    在这个网址上输入github的仓库地址或者github账号，就会检索到所有的jupyter文档进行查看
+https://www.ipaddress.com
+    查看网站ip
+https://zhuanlan.zhihu.com/p/93436925
+    解决github网站访问慢，配置完后可能需要ipconfig /flushdns刷新dns缓存
