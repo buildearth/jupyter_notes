@@ -4,3 +4,7 @@ https://www.ipaddress.com
     查看网站ip
 https://zhuanlan.zhihu.com/p/93436925
     解决github网站访问慢，配置完后可能需要ipconfig /flushdns刷新dns缓存
+http://httpbin.org/ip
+    访问可以查看本机的ip
+https://cloud.baidu.com/product/bcd/search.html?
+    查看域名
