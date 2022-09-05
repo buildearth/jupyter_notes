@@ -1,0 +1,789 @@
+# day07 Java和安卓环境
+
+今日概要：
+
+- Java常见加密（Java -> python实现 ）
+
+- 安卓开发（基于java做安卓app开发）
+
+  - 环境搭建
+  - 快速上手
+
+
+```
+- 安卓基础：页面数据 + 网络请求 + 数据存储 + 常见语句 -> 正常安卓开发 -> Java层面
+- 安卓进阶（JNI开发）
+	- 基础，基于Java开发，简单算法基于Java实现。
+	- C语言（xxx.so），反编译so文件从而得到C语言的代码。
+```
+
+
+
+
+
+
+
+## 1.Java常见加密
+
+
+
+### 1.1 隐藏字节
+
+```java
+TreeMap map = new TreeMap();
+map.put("sign",x);
+
+# 搜索关键字 sign
+```
+
+```java
+String a = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112});
+TreeMap map = new TreeMap();
+map.put(a,x);
+    
+# hook机制，找到TreeMap中的put方法，替换成我自己的某个方法。
+function newPut(key,value){
+    console.log(key,value); 再去获取调用栈。
+    
+}
+```
+
+
+
+
+
+```java
+String salt = "xxssasdfasdfadsf";
+```
+
+```java
+String v4 = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112});
+```
+
+- 示例1：
+
+  ```java
+  String v1 = new String(new byte[]{26, 83, 90, 26, 78, 101, 23, 67, 112});
+  ```
+
+  ```python
+  # 字节列表
+  byte_list = [26, 83, 90, 26, 78, 101, 23, 67, 112]
+  
+  # 字节列表 -> python的字节数组
+  bs = bytearray()
+  for item in byte_list:
+      bs.append(item)
+      
+  # python的字节数组 -> 编码 -> 字符串
+  str_data = bs.decode('utf-8')
+  print(str_data)
+  ```
+
+- 示例2：
+
+  ```java
+  String v4 = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112});
+  
+  # java字节：有符号 -128 ~ 127
+  # python：无符号  0 ~ 255
+  ```
+
+  ```python
+  byte_list = [-26, -83, -90, -26, -78, -101, -23, -67, -112]
+  
+  bs = bytearray()  # python字节数组
+  for item in byte_list:
+      if item < 0:
+          item = item + 256
+      bs.append(item)
+  
+  str_data = bs.decode('utf-8')  # data = bytes(bs)
+  print(str_data)
+  ```
+
+  
+
+```
+注意事项：什么编码？（utf-8)
+	String v4 = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112});
+```
+
+```python
+# 类似于Java中的字节数组
+data = "张三懵逼了"
+data_bytes = data.encode('utf-8')
+
+
+data_list = bytearray()
+for item in data_bytes:
+    data_list.append(item)
+
+res = data_list.decode('utf-8')
+print(res)
+```
+
+
+
+提醒：MD5加密盐、AES加密key、iv;
+
+
+
+### 1.2 uuid
+
+抖音udid
+
+![image-20211012191034675](assets/image-20211012191034675.png)
+
+```java
+import java.util.UUID;
+
+public class Hello {
+    public static void main(String[] args){
+        String uid = UUID.randomUUID().toString();
+        System.out.println(uid);
+    }
+}
+```
+
+```python
+import uuid
+
+uid = str(uuid.uuid4())
+print(uid)
+```
+
+```
+29cd5f50-4b4c-457b-9a59-33a12e3edd10
+```
+
+```
+1.第一类使用uuid
+	抓包发现，每次请求值不一样：d7cb3695-5105-4aaa-b0a8-8188e0977143
+
+2.第一次运行生成UUID
+	- 刚开始运行：调用uuid算法生成一个值。
+	- 写入XML文件
+	- 再使用
+		- 优先去XML文件中找
+		- uuid算法
+
+	此时测试：
+		- 清除app数据
+		- 必须卸载app，重新安装
+```
+
+
+
+
+
+### 1.3 随机值
+
+抖音：openudid
+
+![image-20211012190908863](assets/image-20211012190908863.png)
+
+```java
+import java.math.BigInteger;
+import java.security.SecureRandom;
+
+public class Hello {
+
+    public static void main(String[] args) {
+        // 随机生成80位，10个字节
+        BigInteger v4 = new BigInteger(80, new SecureRandom());
+        // 让字节以16进制展示
+        String res = v4.toString(16);
+        System.out.println(res);
+
+    }
+}
+```
+
+```python
+import random
+
+data = random.randbytes(10)  # pytho3.9
+
+ele_list = []
+for item in data:
+    # 184    十进制  -> 十六进制
+    # hex(item)  # 
+    ele = hex(item)[2:]
+res = "".join(ele_list)
+print(res)
+```
+
+```python
+data = "".join([ hex(item)[2:] for item in random.randbytes(10)])
+```
+
+
+
+#### 小补充：十六进制
+
+```python
+import random
+
+data = random.randbytes(10)  # pytho3.9
+
+ele_list = []
+for item in data:
+    ele = hex(item)[2:].rjust(2,"0")
+res = "".join(ele_list)
+print(res)
+```
+
+```python
+data = "".join([ hex(item)[2:].rjust(2,"0") for item in random.randbytes(10)])
+```
+
+
+
+转换十六进制字符串：
+
+- 内置函数
+
+  ```
+  v1 = hex(199)
+  
+  '0xc7'
+  ```
+
+- 字符串格式化
+
+  ```
+  v2 = "%x" %(199,)
+  
+  'c7'
+  ```
+
+  ```python
+  v3 = "%02x" %(5,)
+  
+  '05'
+  ```
+
+
+
+```python
+import random
+
+data = random.randbytes(10)
+
+ele_list = []
+for item in data:
+    ele = "%02x" %(item,)
+    ele_list.append(ele)
+
+res = "".join(ele_list)
+print(res)
+
+open_udid = "".join(["%02x" % i for i in random.randbytes(10)])
+print(open_udid)
+```
+
+
+
+
+
+
+
+### 1.4 时间戳
+
+抖音：_ticket
+
+![image-20211012192006825](assets/image-20211012192006825.png)
+
+```java
+public class Hello {
+
+    public static void main(String[] args) {
+        String t1 = String.valueOf(System.currentTimeMillis() / 1000);
+        String t2 = String.valueOf(System.currentTimeMillis());
+
+        System.out.println(t1);
+        System.out.println(t2);
+    }
+}
+```
+
+```python
+import time
+
+v1 = int(time.time())
+v2 = int(time.time()*1000)
+```
+
+```
+v1 = str(int(time.time()))
+v2 = str(int(time.time()*1000))
+```
+
+
+
+
+
+### 1.5 十六进制的字符串
+
+
+
+![image-20211012191556212](assets/image-20211012191556212.png)
+
+
+
+在Java中字节是有符号：-128 ~ 127 
+
+```python
+# name_bytes = "武沛齐".encode('utf-8')
+name_bytes = [10, -26, -83, -90, -26, -78, -101, -23, -67, -112]
+
+data_list = []
+
+for item in name_bytes:
+    item = item & 0xff   # item<0时，让item+256
+    ele = "%02x" % item
+    data_list.append(ele)
+    
+print("".join(data_list))
+```
+
+
+
+
+
+### 1.6 md5加密
+
+```python
+import hashlib
+
+obj = hashlib.md5()
+obj.update('xxxxx'.encode('utf-8'))
+
+# java中没有这个功能。
+v1 = obj.hexdigest()
+print(v1) # fb0e22c79ac75679e9881e6ba183b354
+
+v2 = obj.digest()
+print(v2) # b'\xfb\x0e"\xc7\x9a\xc7Vy\xe9\x88\x1ek\xa1\x83\xb3T'
+```
+
+
+
+抖音：X-SS-STUB
+
+```
+每次发送POST请求时，抖音都会携带一些请求头：
+	X-SS-STUB = "fjaku9asdf"
+
+读取请求体中的数据，对请求体中的数据进行md5加密。
+```
+
+![image-20211012192151809](assets/image-20211012192151809.png)
+
+```java
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Base64;
+
+public class Hello {
+
+    public static void main(String[] args) throws NoSuchAlgorithmException {
+        String name = "武沛齐";
+        
+        MessageDigest instance = MessageDigest.getInstance("MD5");
+        byte[] nameBytes = instance.digest(name.getBytes());
+        // System.out.println(Arrays.toString(nameBytes));
+
+        // String res = new String(nameBytes);
+        // System.out.println(res);
+
+        // 十六进制展示
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<nameBytes.length;i++){
+            int val = nameBytes[i] & 255;  // 负数转换为正数
+            if (val<16){
+                sb.append("0");
+            }
+            sb.append(Integer.toHexString(val));
+        }
+        String hexData = sb.toString();
+        System.out.println(hexData); // e6ada6e6b29be9bd90
+    }
+}
+```
+
+```python
+import hashlib
+
+m = hashlib.md5()
+m.update("武沛齐".encode("utf-8"))
+
+v1 = m.digest()
+print(v1) # b'\x175\x10\x12G$)\xd5-\x0c\r#\xd4h\x17='
+
+v2 = m.hexdigest()
+print(v2) # 17351012472429d52d0c0d23d468173d
+```
+
+
+
+
+
+关于加盐：
+
+```java
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Base64;
+
+public class Hello {
+
+    public static void main(String[] args) throws NoSuchAlgorithmException {
+        String name = "武沛齐";
+        MessageDigest instance = MessageDigest.getInstance("MD5");
+        instance.update("xxxxxx".getBytes());
+        
+        byte[] nameBytes = instance.digest(name.getBytes());
+        
+        System.out.println(Arrays.toString(nameBytes));
+
+        String res = new String(nameBytes);
+        System.out.println(res);
+
+        // 十六进制展示
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<nameBytes.length;i++){
+            int val = nameBytes[i] & 255;  // 负数转换为正数
+            if (val<16){
+                sb.append("0");
+            }
+            sb.append(Integer.toHexString(val));
+        }
+        String hexData = sb.toString();
+        System.out.println(hexData); // e6ada6e6b29be9bd90
+    }
+}
+```
+
+
+
+```java
+import hashlib
+
+m = hashlib.md5("xxxxxx".encode('utf-8'))
+m.update("武沛齐".encode("utf-8"))
+
+v2 = m.hexdigest()
+print(v2) # 17351012472429d52d0c0d23d468173d
+```
+
+
+
+### 1.7 sha-256加密
+
+B站：x/report/andriod2，请求体
+
+![image-20211012191522515](assets/image-20211012191522515.png)
+
+![image-20211012191556212](assets/image-20211012191556212-4311753.png)
+
+```java
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Base64;
+
+public class Hello {
+
+    public static void main(String[] args) throws NoSuchAlgorithmException {
+        String name = "武沛齐";
+        MessageDigest instance = MessageDigest.getInstance("SHA-256");
+        byte[] nameBytes = instance.digest(name.getBytes());
+        // System.out.println(Arrays.toString(nameBytes));
+
+        // String res = new String(nameBytes);
+        // System.out.println(res);
+
+        // 十六进制展示
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<nameBytes.length;i++){
+            int val = nameBytes[i] & 255;  // 负数转换为正数
+            if (val<16){
+                sb.append("0");
+            }
+            sb.append(Integer.toHexString(val));
+        }
+        String hexData = sb.toString();
+        System.out.println(hexData); // e6ada6e6b29be9bd90
+    }
+}
+```
+
+```python
+import hashlib
+
+m = hashlib.sha256()
+m.update("武沛齐".encode("utf-8"))
+
+v2 = m.hexdigest()
+print(v2)
+```
+
+
+
+
+
+
+
+
+
+### 1.8 AES加密
+
+对称加密
+
+- key & iv ，明文加密。【app端】
+- key & iv ，解密。【API】
+
+```
+情况A: 请求体密文（抓包乱码）
+情况B: sign，AES加密+base64编码
+```
+
+刷B站播放时，发送POST请求。
+
+AES加密（请求体中的数据） -> 密文（JS央视频 key & iv & 加密）。
+
+![image-20211012192408372](assets/image-20211012192408372.png)
+
+![image-20211012192555254](assets/image-20211012192555254.png)
+
+```java
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Base64;
+
+public class Hello {
+
+    public static void main(String[] args) throws Exception {
+        String data = "武沛齐";
+        String key = "fd6b639dbcff0c2a1b03b389ec763c4b";
+        String iv = "77b07a672d57d64c";
+
+        // 加密
+        byte[] raw = key.getBytes();
+        SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(iv.getBytes());
+        
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
+        byte[] encrypted = cipher.doFinal(data.getBytes());
+        
+        // System.out.println(Arrays.toString(encrypted));
+        
+    }
+}
+```
+
+```python
+# pip install pycryptodome
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+
+KEY = "fd6b639dbcff0c2a1b03b389ec763c4b"
+IV = "77b07a672d57d64c"
+
+
+def aes_encrypt(data_string):
+    aes = AES.new(
+        key=KEY.encode('utf-8'),
+        mode=AES.MODE_CBC,
+        iv=IV.encode('utf-8')
+    )
+    raw = pad(data_string.encode('utf-8'), 16)
+    return aes.encrypt(raw)
+
+data = aes_encrypt("武沛齐")
+print(data)
+print([ i for i in data])
+
+```
+
+
+
+### 1.9 gzip压缩
+
+抖音注册设备：设备。
+
+> 注册设备：生成一些值，值中包括：   （cdid、手机型号、手机品牌....） 后端读取到时候，发现cdid是一个全新的请求。那么抖音就会生成 `device_id、install_id、tt`
+
+```
+（cdid、手机型号、手机品牌....） --> gzip压缩(字节)  --> 加密   -->   密文
+```
+
+
+
+```java
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.io.OutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+public class Hello {
+
+    public static void main(String[] args) throws IOException {
+
+        // 压缩
+        String data = "武沛齐";
+        // System.out.println(Arrays.toString(data.getBytes()));
+        ByteArrayOutputStream v0_1 = new ByteArrayOutputStream();
+        GZIPOutputStream v1 = new GZIPOutputStream((v0_1));
+        v1.write(data.getBytes());
+        v1.close();
+        
+        // [11,22,31,14,45]
+        byte[] arg6 = v0_1.toByteArray();  //gzip压缩后：arg6
+        // System.out.println(Arrays.toString(arg6));
+
+        // 解压缩
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayInputStream in = new ByteArrayInputStream(arg6);
+        GZIPInputStream ungzip = new GZIPInputStream(in);
+        byte[] buffer = new byte[256];
+        int n;
+        while ((n = ungzip.read(buffer)) >= 0) {
+            out.write(buffer, 0, n);
+        }
+        byte[] res = out.toByteArray();
+        // System.out.println(Arrays.toString(res));
+        System.out.println(out.toString("UTF-8"));
+
+    }
+}
+```
+
+```python
+import gzip
+
+
+# 压缩
+"""
+s_in = "我是武沛齐".encode('utf-8')
+s_out = gzip.compress(s_in)
+
+print([i for i in s_out])
+"""
+
+# 解压缩
+"""
+res = gzip.decompress(s_out)
+print(res)
+print(res.decode('utf-8'))
+"""
+```
+
+提醒：java、Python语言区别。（个人字节是不同，不影响整个的结果），。 
+
+
+
+### 1.10 base64编码
+
+```java
+import java.util.Base64;
+
+public class Hello {
+
+    public static void main(String[] args) {
+        String name = "武沛齐";
+        // 加密
+        Base64.Encoder encoder  = Base64.getEncoder();
+        String res = encoder.encodeToString(name.getBytes());
+        System.out.println(res); // "5q2m5rKb6b2Q"
+		
+        // 解密
+        Base64.Decoder decoder  = Base64.getDecoder();
+        byte[] origin = decoder.decode(res);
+        String data = new String(origin);
+        System.out.println(data); // 武沛齐
+
+    }
+}
+```
+
+```python
+import base64
+
+name = "武沛齐"
+
+res = base64.b64encode(name.encode('utf-8'))
+print(res) # b'5q2m5rKb6b2Q'
+
+
+data = base64.b64decode(res)
+origin = data.decode('utf-8')
+print(origin) # "武沛齐"
+```
+
+
+
+
+
+
+
+
+
+## 2.安卓开发（环境搭建）
+
+目标：了解正向开发常见流程（逆向）。
+
+想要开发安卓程序：
+
+- Java语言 + JDK
+- 安卓的工具（SDK）+ 类库
+- IDE - android studio
+
+
+
+详细见：环境搭建
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
