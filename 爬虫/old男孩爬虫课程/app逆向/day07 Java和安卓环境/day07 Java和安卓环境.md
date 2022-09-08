@@ -29,28 +29,37 @@
 
 ### 1.1 隐藏字节
 
+逆向时看到了关键字，可能会直接去搜索，好的情况是直接能搜到，不好的情况是，其关键字是一个字节数组再转为字符串的形式，这样是直接搜不到的，字节就隐藏起来了。
+
 ```java
+// java中字典要放键值对，是要传输给后端的值
 TreeMap map = new TreeMap();
+// 这是简单情况下。直接能搜到关键字
 map.put("sign",x);
 
 # 搜索关键字 sign
 ```
 
 ```java
+// 字符串直接搜，是搜不到的，a字节数组表示字符串
 String a = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112});
 TreeMap map = new TreeMap();
 map.put(a,x);
     
-# hook机制，找到TreeMap中的put方法，替换成我自己的某个方法。
+# hook机制，找到TreeMap中的put方法，替换成我自己的某个方法。hook之后再调用TreeMap的put方法就会执行我们替换之后的方法，走到我们自己的函数中。
 function newPut(key,value){
-    console.log(key,value); 再去获取调用栈。
+    console.log(key,value);   // 看输出的值，找到关键字，再去获取调用栈。
     
 }
 ```
 
+总结思路：
+
+- 在搜索关键字搜索不到时，可以尝试hook一下Map系列的put方法来找
 
 
 
+对于加密时候的盐可能是字符串，也可能是字节数组。
 
 ```java
 String salt = "xxssasdfasdfadsf";
@@ -60,11 +69,15 @@ String salt = "xxssasdfasdfadsf";
 String v4 = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112});
 ```
 
+python代码实现字节数组到字符串，需要先做一把转换，因为python中字节表示范围没有负数，要将java的字节转为python的字节
+
 - 示例1：
 
   ```java
   String v1 = new String(new byte[]{26, 83, 90, 26, 78, 101, 23, 67, 112});
   ```
+
+  在java代码中看到上面的字节数组，把 字节数组直接拷贝到下面python代码中，就能直接知道其字符串的内容是啥了
 
   ```python
   # 字节列表
@@ -84,6 +97,7 @@ String v4 = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112}
 
   ```java
   String v4 = new String(new byte[]{-26, -83, -90, -26, -78, -101, -23, -67, -112});
+  // 对于java中有的有符号值必须先转为python的无符号值在进行操作
   
   # java字节：有符号 -128 ~ 127
   # python：无符号  0 ~ 255
@@ -140,11 +154,14 @@ import java.util.UUID;
 
 public class Hello {
     public static void main(String[] args){
+        // java中有生成uuid的函数，如下
         String uid = UUID.randomUUID().toString();
         System.out.println(uid);
     }
 }
 ```
+
+对应到python中：
 
 ```python
 import uuid
@@ -157,20 +174,30 @@ print(uid)
 29cd5f50-4b4c-457b-9a59-33a12e3edd10
 ```
 
+在app逆向中使用uuid的两个场景：
+
 ```
 1.第一类使用uuid
 	抓包发现，每次请求值不一样：d7cb3695-5105-4aaa-b0a8-8188e0977143
+	可以直接使用python来模拟
 
 2.第一次运行生成UUID
+在请求中uuid都是不变的：在关闭应用，关机，重新打开应用，发现这个uuid值是不变的。这不是个固定的值。
+其逻辑如下：
 	- 刚开始运行：调用uuid算法生成一个值。
 	- 写入XML文件
 	- 再使用
 		- 优先去XML文件中找
 		- uuid算法
 
-	此时测试：
-		- 清除app数据
+	如果想看其是否变化，进行下面测试：
+		- 清除app数据，找到对应的app，会有清除数据的选项
 		- 必须卸载app，重新安装
+	在逆向这种时，可以找有没有xml文件，xml文件中看uuid
+	
+	
+
+		
 ```
 
 
@@ -190,7 +217,7 @@ import java.security.SecureRandom;
 public class Hello {
 
     public static void main(String[] args) {
-        // 随机生成80位，10个字节
+        // 随机生成80位，也就是10个字节（8位一个字节）
         BigInteger v4 = new BigInteger(80, new SecureRandom());
         // 让字节以16进制展示
         String res = v4.toString(16);
@@ -199,6 +226,8 @@ public class Hello {
     }
 }
 ```
+
+用python模拟java中随机生成字节
 
 ```python
 import random
@@ -229,6 +258,7 @@ data = random.randbytes(10)  # pytho3.9
 
 ele_list = []
 for item in data:
+    # 不满两位必须补齐两位，hex(5)=>'0x5',这种情况必须注意
     ele = hex(item)[2:].rjust(2,"0")
 res = "".join(ele_list)
 print(res)
@@ -334,6 +364,8 @@ v2 = str(int(time.time()*1000))
 
 在Java中字节是有符号：-128 ~ 127 
 
+python中将java拿到的字节数组转为16进制字符串
+
 ```python
 # name_bytes = "武沛齐".encode('utf-8')
 name_bytes = [10, -26, -83, -90, -26, -78, -101, -23, -67, -112]
@@ -354,6 +386,11 @@ print("".join(data_list))
 
 ### 1.6 md5加密
 
+python的md5加密，有两种方式得到md5加密的结果
+
+- hexdigest 直接返回的是16进制的字符串
+- digest 返回的是字节
+
 ```python
 import hashlib
 
@@ -364,7 +401,7 @@ obj.update('xxxxx'.encode('utf-8'))
 v1 = obj.hexdigest()
 print(v1) # fb0e22c79ac75679e9881e6ba183b354
 
-v2 = obj.digest()
+v2 = obj.digest()  # 返回字节，在python中不方便使用，所以python中常用hexdigest
 print(v2) # b'\xfb\x0e"\xc7\x9a\xc7Vy\xe9\x88\x1ek\xa1\x83\xb3T'
 ```
 
@@ -380,6 +417,8 @@ print(v2) # b'\xfb\x0e"\xc7\x9a\xc7Vy\xe9\x88\x1ek\xa1\x83\xb3T'
 ```
 
 ![image-20211012192151809](assets/image-20211012192151809.png)
+
+在java中只有`digest`，返回字节数组，需要自己写方法将其转换为16进制字符串
 
 ```java
 import java.security.MessageDigest;
@@ -413,6 +452,8 @@ public class Hello {
     }
 }
 ```
+
+看到一段密文，可以猜测是否是md5，如果不确定，可以去hook`MessageDigest.getInstance`方法来看是什么加密，还可以hook`digest`方法来看生成的字节数组转为密文是不是请求中的数据。
 
 ```python
 import hashlib
@@ -468,7 +509,7 @@ public class Hello {
 }
 ```
 
-
+后期看到md5加密时，要关注update了几次，就是加盐了几次，如果update多次，一定要找到所有update的参数，在python中照着加盐顺序来还原。
 
 ```java
 import hashlib
@@ -484,11 +525,15 @@ print(v2) # 17351012472429d52d0c0d23d468173d
 
 ### 1.7 sha-256加密
 
+和md5一样，就是`MessageDigest.getInstance`的参数不一样
+
 B站：x/report/andriod2，请求体
 
 ![image-20211012191522515](assets/image-20211012191522515.png)
 
 ![image-20211012191556212](assets/image-20211012191556212-4311753.png)
+
+java实现sha256加密
 
 ```java
 import java.security.MessageDigest;
@@ -522,6 +567,8 @@ public class Hello {
 }
 ```
 
+python实现sha256加密
+
 ```python
 import hashlib
 
@@ -542,14 +589,37 @@ print(v2)
 
 ### 1.8 AES加密
 
+情景1：
+
+使用时，对数据进行加密得到字节直接发送，以字节的形式直接放在请求体中传递
+
+- 对请求体进行抓包，发现一大堆都是乱的，其实本质上发送的是二进制，只不过抓包软件进行翻译时按照utf-8的编码进行翻译，翻译不出来字符串的。
+- 看到一大堆乱的，就要猜测是不是AES加密，发送的是字节数据，发送到后端后，后端直接就能解密AES。
+
+情景2：
+
+进行AES加密得到字节之后，配合base64编码，得到一堆16进制的字符串，放到请求体或者请求头中传递数据到后端
+
+
+
+AES加密的Key和Iv是固定的，不是动态的，看到AES加密紧接着去找三个东西(不要怀疑其实动态生成，不要去找是如何算法生成，这玩意一般都是固定死写在代码中的，固定写的不一定在很显眼的位置)：
+
+有时候key和iv藏的比较深，可能是c语言生成的so文件给返回的，所以太深就不要找了，直接hook，输出值来使用
+
+- key，不用找生成的地方，直接hook`SecretKeySpec`的实例化，换成自己的类实例化，实例化时调用自己的，将key一输出，就只到值是什么了，可以直接拿来使用
+- iv  同key
+- 明文
+
+
+
 对称加密
 
 - key & iv ，明文加密。【app端】
 - key & iv ，解密。【API】
 
 ```
-情况A: 请求体密文（抓包乱码）
-情况B: sign，AES加密+base64编码
+情况1: 请求体密文（抓包乱码）
+情况2: sign，AES加密+base64编码
 ```
 
 刷B站播放时，发送POST请求。
@@ -559,6 +629,11 @@ AES加密（请求体中的数据） -> 密文（JS央视频 key & iv & 加密�
 ![image-20211012192408372](assets/image-20211012192408372.png)
 
 ![image-20211012192555254](assets/image-20211012192555254.png)
+
+但凡在java代码中看到以下关键字，就是AES加密了
+
+- `new SecretKeySpec`
+- `IvParameterSpec`
 
 ```java
 import javax.crypto.BadPaddingException;
@@ -625,9 +700,22 @@ print([ i for i in data])
 
 ### 1.9 gzip压缩
 
+抖音注册设备的流程：
+
+抖音第一次打开的时候，会进行注册设备的动作，注册设备会获取手机的一些设备信息(mac地址，androidid，iemi)，设备唯一的这些值，这些值会发给抖音，抖音会读取设备信息，会检测这个设备是不是新设备，如果是新设备会返回install_id和device_id这两值会代表是设备id，如果是老设备会将最开始生成的这两个值返回给你。
+
 抖音注册设备：设备。
 
 > 注册设备：生成一些值，值中包括：   （cdid、手机型号、手机品牌....） 后端读取到时候，发现cdid是一个全新的请求。那么抖音就会生成 `device_id、install_id、tt`
+
+第一次打开将设备信息发送给抖音时，会进行gzip压缩
+
+- 读取设备信息
+- 对设备信息进行加密，得到密文，密文是字节
+- 使用gzip对字节进行压缩
+- 压缩完后将数据发送给抖音
+  - 请求体中：gzip压缩后的数据
+  - 请求头中：对gzip压缩后的数据进行了md5加密
 
 ```
 （cdid、手机型号、手机品牌....） --> gzip压缩(字节)  --> 加密   -->   密文
@@ -701,7 +789,11 @@ print(res.decode('utf-8'))
 """
 ```
 
-提醒：java、Python语言区别。（个人字节是不同，不影响整个的结果），。 
+提醒：java、Python语言区别。（个别字节是不同，不影响整个的结果），。 
+
+
+
+java中gzip压缩后的字节，转为python中的字节时，会和python中对应字符串gzip压缩后的字节有些许不同，将java转为的python字节不同的位置拷贝到pythongzip压缩后的字节位置即可，要验证下。
 
 
 
@@ -761,7 +853,7 @@ print(origin) # "武沛齐"
 - 安卓的工具（SDK）+ 类库
 - IDE - android studio
 
-
+SDK不用单独下载，下载安装了android studio会帮你搞定SDK和类库
 
 详细见：环境搭建
 
